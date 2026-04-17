@@ -1,28 +1,16 @@
-# Environnements
 .venv/
 __pycache__/
 *.pyc
 *.pyo
-
-# Data (jamais versionner les données brutes)
 data/raw/
 data/data/
 *.csv
 *.jsonl
-
-# Secrets
 .env
 *.key
-credentials.json
-
-# Docker
 logs/
 plugins/
-
-# OS
 .DS_Store
 .idea/
-
-# Airflow
 airflow.db
 airflow-webserver.pid

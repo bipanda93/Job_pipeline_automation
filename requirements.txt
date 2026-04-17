@@ -1,0 +1,7 @@
+playwright>=1.40
+pandas>=2.0
+requests
+beautifulsoup4
+lxml
+tqdm
+python-dotenv
