@@ -1,49 +1,57 @@
 services:
+
   postgres:
-    container_name: postgres-1
-    image: postgres:13
+    container_name: postgres-jobs
+    image: postgres:15
     environment:
-      POSTGRES_USER: "airflow"
-      POSTGRES_PASSWORD: "airflow"
-      POSTGRES_DB: "airflow"
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
     ports:
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - backend
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
 
-  mysql_db_2:
-    container_name: mysql_db_2
-    image: mysql:8.0
+  airflow-init:
+    container_name: airflow-init
+    image: apache/airflow:2.9.3
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
-      MYSQL_ROOT_PASSWORD: "rootpass"
-      MYSQL_DATABASE: "testdb"
-      MYSQL_USER: "testuser"
-      MYSQL_PASSWORD: "testpass"
-    ports:
-      - "3307:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY: "8gZqWJmP3i1dY9pLrF2xSxS0I6wqPYeG2o1XkYtQpC4="
+    command: >
+      bash -c "airflow db init &&
+               airflow users create
+               --username admin --password admin
+               --firstname Franck --lastname Bipanda
+               --role Admin --email admin@example.com || true"
     networks:
       - backend
 
-  neo4j:
-    container_name: neo4j
-    image: neo4j:5
-    ports:
-      - "7474:7474"   # Neo4j Browser (UI)
-      - "7687:7687"   # Bolt
+  airflow-scheduler:
+    container_name: airflow-scheduler
+    image: apache/airflow:2.9.3
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
     environment:
-      - NEO4J_AUTH=neo4j/MonMotDePasseFort
-      # Plugins (optionnel) : APOC
-      # - NEO4J_PLUGINS=["apoc"]
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__FERNET_KEY: "8gZqWJmP3i1dY9pLrF2xSxS0I6wqPYeG2o1XkYtQpC4="
     volumes:
-      - neo4j_data:/data
-      - neo4j_logs:/logs
-      - neo4j_import:/var/lib/neo4j/import
-      - neo4j_plugins:/plugins
-    restart: unless-stopped
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./scrapers:/opt/airflow/scrapers
+    command: airflow scheduler
     networks:
       - backend
 
@@ -51,38 +59,26 @@ services:
     container_name: airflow-webserver
     image: apache/airflow:2.9.3
     depends_on:
-      - postgres
+      airflow-init:
+        condition: service_completed_successfully
     environment:
-      AIRFLOW__CORE__EXECUTOR: "LocalExecutor"
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://airflow:airflow@postgres/airflow"
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-      AIRFLOW__CORE__FERNET_KEY: "8gZqWJmP3i1dY9pLrF2xSxS0I6wqWJmP3i1dY9pLrF2xSxS0I6wqPYeG2o1XkYtQpC4="
-      AIRFLOW_UID: "50000"
+      AIRFLOW__CORE__FERNET_KEY: "8gZqWJmP3i1dY9pLrF2xSxS0I6wqPYeG2o1XkYtQpC4="
     ports:
       - "8080:8080"
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
-      - ./plugins:/opt/airflow/plugins
-    command: >
-      bash -c "sleep 15 &&
-               airflow db init &&
-               airflow users create --username admin --password admin
-                                   --firstname Franck --lastname Bipanda
-                                   --role Admin --email admin@example.com || true &&
-               airflow webserver"
+      - ./scrapers:/opt/airflow/scrapers
+    command: airflow webserver
     networks:
       - backend
 
 volumes:
   postgres_data:
-  mysql_data:
-  neo4j_data:
-  neo4j_logs:
-  neo4j_import:
-  neo4j_plugins:
 
 networks:
   backend:
     driver: bridge
-
