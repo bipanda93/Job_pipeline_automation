@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS raw_indeed_jobs(
     salary            varchar(200),
     raw_text          TEXT,
     url               TEXT,
-    scrapped_at       timestamp
+    scraped_at       timestamp
 );
 
 CREATE TABLE IF NOT EXISTS  raw_linkedin_jobs(
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS  raw_linkedin_jobs(
     salary            varchar(200),
     raw_text          TEXT,
     url               TEXT,
-    scrapped_at       timestamp
+    scraped_at       timestamp
 );
 
 CREATE TABLE IF NOT EXISTS raw_wttj_jobs (
