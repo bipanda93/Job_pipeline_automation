@@ -2,7 +2,7 @@
 -- BRONZE - 5 Tables raws par source
 --==============================================================
 
-create table if not exist raw_indeed_jobs(
+CREATE TABLE IF NOT EXISTS raw_indeed_jobs(
     id serial         primary key,
     offer_id          varchar(100) unique,
     title             varchar(500),
@@ -15,7 +15,7 @@ create table if not exist raw_indeed_jobs(
     scrapped_at       timestamp
 );
 
-create table if not exist raw_linkedin_jobs(
+CREATE TABLE IF NOT EXISTS  raw_linkedin_jobs(
     id                serial primary key,
     offer_id          varchar(100) unique,
     title             varchar(500),
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS raw_france_travail_jobs (
 -- SYLVER - Table unifiée de toute sources
 --================================================================
 
-create table if not exists clean_jobs(
+CREATE TABLE IF NOT EXISTS clean_jobs(
     id            SERIAL PRIMARY KEY,
     offer_id      VARCHAR(100) UNIQUE,
     title         VARCHAR(500),
@@ -84,13 +84,13 @@ create table if not exists clean_jobs(
     source        VARCHAR(50),
     scraped_at    TIMESTAMP,
     created_at    TIMESTAMP DEFAULT NOW ()
-)
+);
 
 --==============================================================
 -- GOLD - candidatures et lettres générées
 --==============================================================
 
-create table if not exists (
+CREATE TABLE IF NOT EXISTS candidatures (
     id            serial primary key,
     offer_id      VARCHAR(100) UNIQUE,
     title         VARCHAR(500),
@@ -102,7 +102,6 @@ create table if not exists (
     created_at    TIMESTAMP DEFAULT NOW()
 
 );
-
 
 CREATE TABLE IF NOT EXISTS lettres_generees (
     id            SERIAL PRIMARY KEY,
