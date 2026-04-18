@@ -5,3 +5,4 @@ beautifulsoup4
 lxml
 tqdm
 python-dotenv
+psycopg2-binary
