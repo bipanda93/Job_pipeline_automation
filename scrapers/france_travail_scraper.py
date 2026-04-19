@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Optional
 
 from playwright.async_api import async_playwright
+from db import get_connection
 
 # ============================================================
 # CONFIG
@@ -236,7 +237,37 @@ async def scrape_detail(page, url: str) -> dict:
         "source": "france_travail",
     }
 
+# ============================================================
+# Connexion PostgreSQL
+# ============================================================
 
+def insert_job_to_db(job: dict):
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO raw_france_travail_jobs
+            (offer_id, title, company, location,
+             contract_type, salary, raw_text, url, scraped_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
+            ON CONFLICT (offer_id) DO NOTHING
+        """, (
+            job.get("offer_id"),
+            job.get("title"),
+            job.get("company"),
+            job.get("location"),
+            job.get("contract_type"),
+            job.get("salary"),
+            job.get("raw_text"),
+            job.get("url"),
+        ))
+        conn.commit()
+    except Exception as e:
+        print(f"Erreur insertion DB: {e}")
+        conn.rollback()
+    finally:
+        cursor.close()
+        conn.close()
 # ============================================================
 # MAIN
 # ============================================================
@@ -275,7 +306,7 @@ async def main():
                 continue
 
             data = await scrape_detail(page, u)
-            append_jsonl(DETAILS_FILE, data)
+            insert_job_to_db(data)
 
             if data.get("offer_id"):
                 seen.add(data["offer_id"])
